@@ -98,17 +98,17 @@ The project includes several data processing scripts:
 ├── data_loader.py            # Data loading utilities
 ├── game_utils.py             # Game logic utilities
 ├── pages/                    # Dash page components
-│   ├── home.py              # Home page
-│   ├── search.py            # Book search page
-│   ├── game_hub.py          # Game hub landing page
-│   ├── pairings_hub.py      # Literary pairings page
-│   ├── book_view.py         # Individual book viewer
+│   ├── home.py               # Home page
+│   ├── search.py             # Book search page
+│   ├── game_hub.py           # Game hub landing page
+│   ├── pairings_hub.py       # Literary pairings page
+│   ├── book_view.py          # Individual book viewer
 │   ├── little_red_herring.py # Game: Little Red Herring
-│   ├── much_ado.py          # Game: Much Ado About Nothing
-│   ├── mystery.py           # Game: Mystery Game
-│   └── tale_of_counts.py    # Game: Tale of Counts
+│   ├── much_ado.py           # Game: Much Ado About Nothing
+│   ├── mystery.py            # Game: Mystery Game
+│   └── tale_of_counts.py     # Game: Tale of Counts
 ├── assets/                   # Static assets (CSS, images)
-│   └── style.css            # Custom styles
+│   └── style.css             # Custom styles
 ├── project_books_raw/        # Raw book text files (~24,278 files)
 ├── project_books_clean/      # Cleaned book text files (~24,278 files)
 ├── book_word_counts_output/  # Spark output directory
