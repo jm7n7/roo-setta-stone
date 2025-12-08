@@ -96,42 +96,41 @@ def tale_game_logic(start_click, next_click, btn1_click, btn2_click, state):
     
     # 1. START or NEXT ROUND
     if trigger_id in ['tale-start-btn', 'tale-next-btn']:
+        print("--- DEBUG: Starting New Battle ---")
         available_ids = df['book_number'].tolist()
         game_data = game_utils.get_stat_attack_challenge(available_ids)
         
-        if not game_data: return [no_update] * 16
+        if not game_data: 
+            print("ERROR: Could not generate game data.")
+            return [no_update] * 16
         
-        # Ensure we have valid integers for lookup
         id1 = int(game_data['id_1'])
         id2 = int(game_data['id_2'])
+        print(f"Matchup: Book {id1} vs Book {id2}")
         
-        # Safe Metadata Lookup
-        row1 = df[df['book_number'] == id1]
-        row2 = df[df['book_number'] == id2]
-        
-        # Fallback if book ID exists in DB but not in CSV (shouldn't happen, but safe)
-        if row1.empty or row2.empty:
-             # Just retry silently by returning no_update and letting user click again, 
-             # or ideally recurse, but for safety we just stop.
-             return [no_update] * 16
-
-        b1 = row1.iloc[0]
-        b2 = row2.iloc[0]
-        
-        # Safe String Conversion (Handles NaNs in CSV)
-        t1 = str(b1['title']) if pd.notna(b1['title']) else "Unknown Title"
-        a1 = str(b1['author']) if pd.notna(b1['author']) else "Unknown Author"
-        
-        t2 = str(b2['title']) if pd.notna(b2['title']) else "Unknown Title"
-        a2 = str(b2['author']) if pd.notna(b2['author']) else "Unknown Author"
-        
-        def format_genres(g):
-            if isinstance(g, list): return ", ".join(g)
-            if pd.isna(g): return ""
-            return str(g)
+        # Helper to safely get book data
+        def get_book_display(b_id):
+            row = df[df['book_number'] == b_id]
+            if row.empty:
+                print(f"WARNING: Book ID {b_id} not found in metadata CSV!")
+                return f"Unknown Title (ID: {b_id})", "Unknown Author", "Unknown Genre"
             
-        g1 = format_genres(b1['genres'])
-        g2 = format_genres(b2['genres'])
+            item = row.iloc[0]
+            title = str(item['title']) if pd.notna(item['title']) else f"Untitled (ID: {b_id})"
+            author = str(item['author']) if pd.notna(item['author']) else "Unknown Author"
+            
+            genres = item['genres']
+            if isinstance(genres, list):
+                genre_str = ", ".join(genres[:2])
+            elif pd.isna(genres):
+                genre_str = ""
+            else:
+                genre_str = str(genres)
+                
+            return title, author, genre_str
+
+        t1, a1, g1 = get_book_display(id1)
+        t2, a2, g2 = get_book_display(id2)
         
         return (
             {'display': 'block'}, {'display': 'none'},
@@ -150,8 +149,11 @@ def tale_game_logic(start_click, next_click, btn1_click, btn2_click, state):
         
         feedback_text = "🎉 Correct!" if is_correct else "❌ Wrong!"
         feedback_color = "green" if is_correct else "red"
+        
+        # Use simple strings or html spans for results
         res1 = html.Span(f"{c1:,} times", style={'color': 'green' if winner_is_1 else '#666'})
         res2 = html.Span(f"{c2:,} times", style={'color': 'green' if not winner_is_1 else '#666'})
+        
         feedback_header = html.Span(feedback_text, style={'color': feedback_color, 'fontSize': '32px', 'fontWeight': 'bold'})
         
         return (
