@@ -11,7 +11,7 @@ The project employs a classic MapReduce strategy using PySpark to ingest over 8G
 ⚙️ Architecture
 
 The pipeline transforms unstructured raw text into structured, queryable insights.
-'''
+```
 graph LR
     A[Raw Gutenberg .txt Files] -->|Ingest| B(PySpark MapReduce)
     B -->|Cleaning & Tokenization| C{Word Count Aggregation}
@@ -19,7 +19,7 @@ graph LR
     D -->|ETL Script| E[(SQLite Database)]
     E -->|Real-time Queries| F[Dash Application]
     F -->|User Interface| G[Games, Search, Analysis]
-'''
+```
 
 1. The MapReduce Backend (spark_wordcount.py)
 
