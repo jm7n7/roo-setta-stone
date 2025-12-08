@@ -11,12 +11,17 @@ The Roo-Setta Stone processes and analyzes the vast Project Gutenberg library to
 ## Features
 
 - **🔍 Book Search**: Search and explore books from the Gutenberg metadata with a detailed view of individual books with word frequency analysis
+- **📊 Data Analysis Hub**: Explore library-wide statistics and author comparisons:
+  - **Distributions**: Analyze vocabulary size distributions and Zipf's Law validation
+  - **Author Stats**: Compare vocabulary depth, verbosity, and linguistic habits of top authors
 - **🎮 Game Hub**: Interactive games based on book analysis:
   - Little Red Herring
   - Much Ado About Counting
-  - A Book and a Clue
+  - A Book with a Clue
   - Tale of Two Counts
-- **💞 Literary Pairings**: Discover unique book pairings and relationships
+- **💞 Literary Pairings**: Discover unique book pairings and relationships:
+  - **Unique Word Twins**: Books that share an extraordinarily high percentage of their unique vocabulary
+  - **Individual Word Twins**: Books that use a specific word the exact same number of times
 
 ## Setup
 
@@ -69,12 +74,18 @@ python csv_to_sqlite.py
 ```
 This transforms the word count CSV files into `project_books.db` SQLite database for fast querying.
 
-**Step 6: Run the Application**
+**Step 6: Generate Static Plots (Optional)**
+```bash
+python generate_plots.py
+```
+This generates pre-computed visualizations for the Data Analysis Hub. The application will work without this step, but some charts may not be available.
+
+**Step 7: Run the Application**
 ```bash
 python app.py
 ```
 
-**Step 7: Open in Browser**
+**Step 8: Open in Browser**
 Navigate to `http://localhost:8050` in your web browser.
 
 ## Data Processing
@@ -84,6 +95,7 @@ The project includes several data processing scripts:
 - **`book_file_cleanup.py`**: Cleans raw book text files
 - **`spark_wordcount.py`**: PySpark MapReduce job to count words across all books
 - **`csv_to_sqlite.py`**: Converts processed word count data to SQLite database
+- **`generate_plots.py`**: Generates static visualization plots for the Data Analysis Hub
 - **`data_loader.py`**: Loads and preprocesses metadata for the web application
 - **`find_unique_twins.py`**: Finds unique book pairings based on word patterns
 
@@ -100,18 +112,26 @@ The project includes several data processing scripts:
 ├── pages/                    # Dash page components
 │   ├── home.py               # Home page
 │   ├── search.py             # Book search page
+│   ├── analysis_hub.py       # Data analysis hub landing page
+│   ├── distributions.py      # Distribution analysis page
+│   ├── authors.py            # Author statistics page
 │   ├── game_hub.py           # Game hub landing page
-│   ├── pairings_hub.py       # Literary pairings page
+│   ├── pairings_hub.py       # Literary pairings hub page
+│   ├── unique_twins.py       # Unique word twins page
+│   ├── word_twins.py         # Individual word twins page
 │   ├── book_view.py          # Individual book viewer
 │   ├── little_red_herring.py # Game: Little Red Herring
-│   ├── much_ado.py           # Game: Much Ado About Nothing
-│   ├── mystery.py            # Game: Mystery Game
-│   └── tale_of_counts.py     # Game: Tale of Counts
-├── assets/                   # Static assets (CSS, images)
-│   └── style.css             # Custom styles
+│   ├── much_ado.py           # Game: Much Ado About Counting
+│   ├── mystery.py            # Game: A Book with a Clue
+│   └── tale_of_counts.py     # Game: Tale of Two Counts
+├── assets/                   # Static assets (CSS, images, plots)
+│   ├── style.css             # Custom styles
+│   └── plots/                # Pre-generated visualization plots
 ├── project_books_raw/        # Raw book text files (~24,278 files)
 ├── project_books_clean/      # Cleaned book text files (~24,278 files)
 ├── book_word_counts_output/  # Spark output directory
+├── unique_twins.json         # Pre-computed unique word twins data
+├── generate_plots.py         # Script to generate static plots
 └── README.md                 # This file
 ```
 
