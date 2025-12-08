@@ -14,19 +14,39 @@ The pipeline transforms unstructured raw text into structured, queryable insight
 
 ```mermaid
 graph LR
-    A[Project Gutenberg Website] -->|Web Scraping| B[Raw .txt Files]
-    B -->|Initial Cleaning| C[Cleaned .txt Files]
-    C -->|Ingest| D(PySpark MapReduce)
-    D -->|Tokenization| E{Word Count Aggregation}
-    E -->|Export| F[CSV Data]
-    F -->|ETL Script| G[(SQLite Database)]
-    G -->|Real-time Queries| H[Dash Application]
-    H -->|User Interface| I[Games, Search, Analysis]
+    A[Project Gutenberg Website] -->|Metadata Scraping| B[gutenberg_metadata.csv]
+    B -->|Web Downloading| C[Raw .txt Files]
+    C -->|Initial Cleaning| D[Cleaned .txt Files]
+    D -->|Ingest| E(PySpark MapReduce)
+    E -->|Tokenization| F{Word Count Aggregation}
+    F -->|Export| G[CSV Data]
+    G -->|ETL Script| H[(SQLite Database)]
+    H -->|Real-time Queries| I[Dash Application]
+    I -->|User Interface| J[Games, Search, Analysis]
 ```
 
-### 1. Web Scraping & Downloading (book_web_downloader.ipynb)
+### 1. Metadata Scraping (book_web_scrapper.ipynb)
 
-**Input**: `gutenberg_metadata.csv` containing book metadata and download URLs.
+**Input**: Project Gutenberg website (https://www.gutenberg.org/ebooks/).
+
+**Process**:
+- Scrapes Project Gutenberg book pages using `requests` and `BeautifulSoup`
+- Extracts metadata from the `bibrec` table for each book:
+  - Book number, title, author, language
+  - Genres (filtered by predefined categories)
+  - Plain text download URL
+- Filters books by:
+  - English language only
+  - Specific genre categories (Adventure, Classics, Novels, etc.)
+  - Availability of plain text UTF-8 format
+- Uses concurrent threading (ThreadPoolExecutor) to scrape multiple books in parallel
+- Processes book IDs from 1 to ~75,000 to find all available books
+
+**Output**: `gutenberg_metadata.csv` containing ~24,000 book records with metadata and download URLs.
+
+### 2. Web Scraping & Downloading (book_web_downloader.ipynb)
+
+**Input**: `gutenberg_metadata.csv` (created by `book_web_scrapper.ipynb`) containing book metadata and download URLs.
 
 **Process**: 
 - Loads metadata dictionary mapping book IDs to download URLs
@@ -37,7 +57,7 @@ graph LR
 
 **Output**: Raw text files saved to `project_books_raw/` directory (~24,000 files, ~8GB).
 
-### 2. Initial Data Cleaning (book_file_cleanup.py)
+### 3. Initial Data Cleaning (book_file_cleanup.py)
 
 **Input**: Raw text files from `project_books_raw/` directory.
 
@@ -51,7 +71,7 @@ graph LR
 
 **Output**: Cleaned text files saved to `project_books_clean/` directory, ready for MapReduce processing.
 
-### 3. The MapReduce Backend (spark_wordcount.py)
+### 4. The MapReduce Backend (spark_wordcount.py)
 
 **Input**: 24,000+ cleaned .txt files from `project_books_clean/`.
 
@@ -61,7 +81,7 @@ graph LR
 
 **Output**: A consolidated dataset of 1.4 billion processed tokens.
 
-### 4. The Frontend (app.py)
+### 5. The Frontend (app.py)
 
 Built with Plotly Dash for a reactive, single-page application (SPA) experience.
 
@@ -116,11 +136,25 @@ pip install -r requirements.txt
 
 ### 3. Initialize Data & Assets
 
-**Note**: The SQLite database (project_books.db) is required. If running from scratch, you must run the full ETL pipeline. If the DB is provided, skip to step 3d.
+**Note**: The SQLite database (project_books.db) is required. If running from scratch, you must run the full ETL pipeline starting from step 3a. If `gutenberg_metadata.csv` is provided, skip to step 3b. If the DB is provided, skip to step 3e.
 
-#### 3a. Download Raw Data (Only if building from scratch):
+#### 3a. Scrape Metadata (Only if building from scratch):
 
-**Prerequisites**: Ensure `gutenberg_metadata.csv` exists with book metadata and download URLs.
+**Prerequisites**: None - this is the first step in the pipeline.
+
+```bash
+# Run the Jupyter notebook to scrape book metadata from Project Gutenberg
+jupyter notebook book_web_scrapper.ipynb
+# Or convert to Python script and run:
+# jupyter nbconvert --to script book_web_scrapper.ipynb
+# python book_web_scrapper.py
+```
+
+This will scrape Project Gutenberg website to extract book metadata (title, author, genres, download URLs) and save to `gutenberg_metadata.csv`. The process uses concurrent threading and may take several hours depending on network speed and the number of books processed.
+
+#### 3b. Download Raw Data (Required after metadata scraping):
+
+**Prerequisites**: Ensure `gutenberg_metadata.csv` exists (created in step 3a).
 
 ```bash
 # Run the Jupyter notebook to download books from Project Gutenberg
@@ -132,7 +166,7 @@ jupyter notebook book_web_downloader.ipynb
 
 This will download ~24,000 books to `project_books_raw/` directory (~8GB). The process uses concurrent threading and may take 30-60 minutes depending on network speed.
 
-#### 3b. Clean Raw Data (Required after downloading):
+#### 3c. Clean Raw Data (Required after downloading):
 
 ```bash
 python book_file_cleanup.py   # Remove Gutenberg headers/footers
@@ -140,14 +174,14 @@ python book_file_cleanup.py   # Remove Gutenberg headers/footers
 
 This processes files from `project_books_raw/` and outputs cleaned versions to `project_books_clean/`.
 
-#### 3c. Run MapReduce & ETL (Required after cleaning):
+#### 3d. Run MapReduce & ETL (Required after cleaning):
 
 ```bash
 python spark_wordcount.py   # Process cleaned text (Requires Spark)
 python csv_to_sqlite.py     # Build Database
 ```
 
-#### 3d. Generate Static Assets (REQUIRED):
+#### 3e. Generate Static Assets (REQUIRED):
 
 This script pre-calculates the heavy visualizations (Zipf's Law, Author Stats) to ensure the UI remains fast.
 
@@ -173,7 +207,8 @@ roo-setta-stone/
 ├── generate_plots.py       # Pre-calculation script for Analysis Hub
 │
 ├── data_pipeline/          # Data Acquisition & Processing
-│   ├── book_web_downloader.ipynb  # Web scraping script (Jupyter)
+│   ├── book_web_scrapper.ipynb    # Metadata scraping (creates gutenberg_metadata.csv)
+│   ├── book_web_downloader.ipynb  # Book downloading script (Jupyter)
 │   ├── book_file_cleanup.py       # Initial data cleaning
 │   ├── spark_wordcount.py         # PySpark MapReduce processing
 │   └── csv_to_sqlite.py           # ETL to SQLite database
