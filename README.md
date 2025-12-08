@@ -14,25 +14,54 @@ The pipeline transforms unstructured raw text into structured, queryable insight
 
 ```mermaid
 graph LR
-    A[Raw Gutenberg .txt Files] -->|Ingest| B(PySpark MapReduce)
-    B -->|Cleaning & Tokenization| C{Word Count Aggregation}
-    C -->|Export| D[CSV Data]
-    D -->|ETL Script| E[(SQLite Database)]
-    E -->|Real-time Queries| F[Dash Application]
-    F -->|User Interface| G[Games, Search, Analysis]
+    A[Project Gutenberg Website] -->|Web Scraping| B[Raw .txt Files]
+    B -->|Initial Cleaning| C[Cleaned .txt Files]
+    C -->|Ingest| D(PySpark MapReduce)
+    D -->|Tokenization| E{Word Count Aggregation}
+    E -->|Export| F[CSV Data]
+    F -->|ETL Script| G[(SQLite Database)]
+    G -->|Real-time Queries| H[Dash Application]
+    H -->|User Interface| I[Games, Search, Analysis]
 ```
 
-### 1. The MapReduce Backend (spark_wordcount.py)
+### 1. Web Scraping & Downloading (book_web_downloader.ipynb)
 
-Input: 24,000+ .txt files from Project Gutenberg.
+**Input**: `gutenberg_metadata.csv` containing book metadata and download URLs.
 
-Map: Tokenizes text, handles strict encoding cleanup (UTF-8/Latin-1), and emits ((book_id, word), 1).
+**Process**: 
+- Loads metadata dictionary mapping book IDs to download URLs
+- Uses `requests` library to download plain text files from Project Gutenberg
+- Implements concurrent threading (ThreadPoolExecutor with 10 workers) for parallel downloads
+- Handles encoding (UTF-8) and file naming conventions
+- Skips already-downloaded files for efficient re-runs
 
-Reduce: Aggregates counts by key to produce final word frequency tables.
+**Output**: Raw text files saved to `project_books_raw/` directory (~24,000 files, ~8GB).
 
-Output: A consolidated dataset of 1.4 billion processed tokens.
+### 2. Initial Data Cleaning (book_file_cleanup.py)
 
-### 2. The Frontend (app.py)
+**Input**: Raw text files from `project_books_raw/` directory.
+
+**Process**:
+- Reads files with UTF-8 encoding (falls back to Latin-1 for older texts)
+- Removes Project Gutenberg headers and footers using standard markers:
+  - `*** START OF` - marks the beginning of actual book content
+  - `*** END OF` - marks the end of book content
+- Strips whitespace and preserves only the core literary text
+- Handles edge cases where markers may be missing (fallback preserves original)
+
+**Output**: Cleaned text files saved to `project_books_clean/` directory, ready for MapReduce processing.
+
+### 3. The MapReduce Backend (spark_wordcount.py)
+
+**Input**: 24,000+ cleaned .txt files from `project_books_clean/`.
+
+**Map**: Tokenizes text, handles strict encoding cleanup (UTF-8/Latin-1), and emits ((book_id, word), 1).
+
+**Reduce**: Aggregates counts by key to produce final word frequency tables.
+
+**Output**: A consolidated dataset of 1.4 billion processed tokens.
+
+### 4. The Frontend (app.py)
 
 Built with Plotly Dash for a reactive, single-page application (SPA) experience.
 
@@ -87,16 +116,38 @@ pip install -r requirements.txt
 
 ### 3. Initialize Data & Assets
 
-**Note**: The SQLite database (project_books.db) is required. If running from scratch, you must run the ETL scripts. If the DB is provided, skip to step 3b.
+**Note**: The SQLite database (project_books.db) is required. If running from scratch, you must run the full ETL pipeline. If the DB is provided, skip to step 3d.
 
-#### 3a. Run ETL (Only if building from raw data):
+#### 3a. Download Raw Data (Only if building from scratch):
+
+**Prerequisites**: Ensure `gutenberg_metadata.csv` exists with book metadata and download URLs.
 
 ```bash
-python spark_wordcount.py   # Process raw text (Requires Spark)
+# Run the Jupyter notebook to download books from Project Gutenberg
+jupyter notebook book_web_downloader.ipynb
+# Or convert to Python script and run:
+# jupyter nbconvert --to script book_web_downloader.ipynb
+# python book_web_downloader.py
+```
+
+This will download ~24,000 books to `project_books_raw/` directory (~8GB). The process uses concurrent threading and may take 30-60 minutes depending on network speed.
+
+#### 3b. Clean Raw Data (Required after downloading):
+
+```bash
+python book_file_cleanup.py   # Remove Gutenberg headers/footers
+```
+
+This processes files from `project_books_raw/` and outputs cleaned versions to `project_books_clean/`.
+
+#### 3c. Run MapReduce & ETL (Required after cleaning):
+
+```bash
+python spark_wordcount.py   # Process cleaned text (Requires Spark)
 python csv_to_sqlite.py     # Build Database
 ```
 
-#### 3b. Generate Static Assets (REQUIRED):
+#### 3d. Generate Static Assets (REQUIRED):
 
 This script pre-calculates the heavy visualizations (Zipf's Law, Author Stats) to ensure the UI remains fast.
 
@@ -121,6 +172,12 @@ roo-setta-stone/
 ├── game_utils.py           # Core Game Logic & Database Queries
 ├── generate_plots.py       # Pre-calculation script for Analysis Hub
 │
+├── data_pipeline/          # Data Acquisition & Processing
+│   ├── book_web_downloader.ipynb  # Web scraping script (Jupyter)
+│   ├── book_file_cleanup.py       # Initial data cleaning
+│   ├── spark_wordcount.py         # PySpark MapReduce processing
+│   └── csv_to_sqlite.py           # ETL to SQLite database
+│
 ├── pages/                  # Dash Pages (Multi-Page Architecture)
 │   ├── home.py             # Landing Page
 │   ├── search.py           # Book Search Interface
@@ -135,6 +192,8 @@ roo-setta-stone/
 │   ├── style.css           # Global Styling
 │   └── plots/              # Pre-generated Plotly JSON files
 │
+├── project_books_raw/      # Raw downloaded files (~8GB)
+├── project_books_clean/    # Cleaned files (headers/footers removed)
 ├── project_books.db        # SQLite Database (Word Counts)
 └── gutenberg_metadata.csv  # Book Metadata (Title, Author, Genre)
 ```
@@ -142,7 +201,7 @@ roo-setta-stone/
 
 ## 👥 Authors
 
-- **Brady Maes**
-- **Joseph Marinello**
+- **Brady Maes** - Data Science & Backend Engineering
+- **Joseph Marinello** - Data Science & Frontend Logic
 
-Principles of Big Data Management Project for the MS in Data Science at the University of Missouri-Kansas City.
+Capstone Project for the MS in Data Science at the University of Missouri-Kansas City.
