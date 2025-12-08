@@ -18,7 +18,8 @@ app.layout = html.Div([
                 dcc.Link('🏠 Home', href='/', className='nav-link', style={'color': THEME['secondary'], 'margin': '0 15px', 'textDecoration': 'none', 'fontSize': '18px'}),
                 dcc.Link('🔍 Book Search', href='/search', className='nav-link', style={'color': THEME['secondary'], 'margin': '0 15px', 'textDecoration': 'none', 'fontSize': '18px'}),
                 dcc.Link('🎮 Game Hub', href='/games', className='nav-link', style={'color': THEME['secondary'], 'margin': '0 15px', 'textDecoration': 'none', 'fontSize': '18px'}),
-                # NEW: Literary Pairings Link
+                # NEW: Data Analysis Link
+                dcc.Link('📊 Data Analysis', href='/analysis', className='nav-link', style={'color': THEME['secondary'], 'margin': '0 15px', 'textDecoration': 'none', 'fontSize': '18px'}),
                 dcc.Link('💞 Literary Pairings', href='/pairings', className='nav-link', style={'color': THEME['secondary'], 'margin': '0 15px', 'textDecoration': 'none', 'fontSize': '18px'}),
             ])
         ], style={'display': 'flex', 'justifyContent': 'space-between', 'alignItems': 'center', 'maxWidth': '1200px', 'margin': '0 auto'})
