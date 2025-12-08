@@ -142,7 +142,7 @@ roo-setta-stone/
 
 ## 👥 Authors
 
-- **Brady Maes** - Data Science & Backend Engineering
-- **Joseph Marinello** - Data Science & Frontend Logic
+- **Brady Maes**
+- **Joseph Marinello**
 
-Capstone Project for the MS in Data Science at the University of Missouri-Kansas City.
+Principles of Big Data Management Project for the MS in Data Science at the University of Missouri-Kansas City.
